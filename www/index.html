@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a2a6c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Teleprompter Web App</title>
+    <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6d8fc7;
+            --accent-color: #f5a623;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #ddd;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --tab-inactive: #e9ecef;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 10px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 5px;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+        }
+        
+        h2 {
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 10px 10px 0 0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background-color: var(--tab-inactive);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background-color: #dde1e7;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-bottom: 3px solid var(--accent-color);
+            color: var(--primary-color);
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            background-color: white;
+            border-radius: 0 0 10px 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 500px;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Scripts Tab */
+        .scripts-tab {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .scripts-tab {
+                flex-direction: row;
+            }
+            
+            .scripts-sidebar {
+                flex: 0 0 300px;
+            }
+            
+            .scripts-main {
+                flex: 1;
+            }
+        }
+        
+        .scripts-sidebar {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .scripts-main {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Teleprompter Tab */
+        .teleprompter-tab {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .teleprompter-display {
+            flex-grow: 1;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            /* Allow internal scrolling and avoid cutting child content */
+            overflow: auto;
+            position: relative;
+            min-height: 400px;
+            max-height: 60vh;
+            display: flex;
+            /* align to top so larger fonts don't get vertically centered and cropped */
+            align-items: flex-start;
+            justify-content: center;
+        }
+        
+        .teleprompter-text {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            width: 100%;
+            max-height: none;
+            /* Let the container handle scrolling */
+            overflow: visible;
+            padding: 10px;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .teleprompter-text h1, 
+        .teleprompter-text h2, 
+        .teleprompter-text h3 {
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            color: var(--primary-color);
+        }
+        
+        .teleprompter-text p {
+            margin-bottom: 1em;
+        }
+        
+        .teleprompter-text .highlight {
+            background-color: rgba(245, 166, 35, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Button Styles */
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 120px;
+            justify-content: center;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.secondary {
+            background-color: #6c757d;
+        }
+        
+        button.accent {
+            background-color: var(--accent-color);
+        }
+        
+        button.danger {
+            background-color: var(--danger-color);
+        }
+        
+        button.success {
+            background-color: var(--success-color);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* File Upload */
+        .file-upload {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        .file-upload label {
+            padding: 12px;
+            background-color: var(--secondary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .file-upload label:hover {
+            background-color: var(--primary-color);
+        }
+        
+        /* Script List */
+        .script-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        
+        .script-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .script-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .script-item.selected {
+            background-color: var(--secondary-color);
+            color: white;
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .script-item .script-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .script-item .script-preview {
+            font-size: 0.85rem;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .delete-script {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .delete-script:hover {
+            opacity: 1;
+        }
+        
+        /* Controls */
+        .teleprompter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 576px) {
+            .teleprompter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-buttons, .control-settings {
+                width: 100%;
+            }
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-settings {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        /* Settings */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .settings-grid label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        
+        /* Edit Area */
+        .edit-area {
+            display: none;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .edit-area textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            font-family: 'Segoe UI', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        
+        .edit-area textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        /* Empty States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .empty-state h2 {
+            margin-bottom: 10px;
+            color: #6c757d;
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .modal-title {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            color: var(--text-color);
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        /* Speed Indicator */
+        .speed-indicator {
+            font-weight: bold;
+            color: var(--accent-color);
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        /* Range Input */
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+        }
+        
+        select, input[type="text"] {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            min-width: 120px;
+        }
+        
+        /* Touch Styles */
+        @media (hover: none) {
+            button:hover {
+                transform: none;
+            }
+            
+            .script-item:hover {
+                background-color: inherit;
+            }
+            
+            .script-item.selected {
+                background-color: var(--secondary-color);
+            }
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-scroll"></i> Teleprompter Web App</h1>
+            <p>Free Teleprompter Web App</p>
+        </header>
+        
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <div class="tab active" id="scriptsTabBtn">
+                <i class="fas fa-file-alt"></i> Scripts
+            </div>
+            <div class="tab" id="teleprompterTabBtn">
+                <i class="fas fa-scroll"></i> Teleprompter
+            </div>
+        </div>
+        
+        <!-- Scripts Tab Content -->
+        <div class="tab-content active" id="scriptsTab">
+            <div class="scripts-tab">
+                <div class="scripts-sidebar">
+                    <h2><i class="fas fa-file-alt"></i> Scripts</h2>
+                    
+                    <div class="button-group">
+                        <button id="newScriptBtn" class="accent">
+                            <i class="fas fa-plus"></i> New
+                        </button>
+                        <button id="saveBtn" disabled>
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button id="importBtn">
+                            <i class="fas fa-file-import"></i> Import
+                        </button>
+                    </div>
+                    
+                    <div class="file-upload">
+                        <input type="file" id="fileInput" accept=".txt,.md,.html,.docx,.pdf,.rtf">
+                        <label for="fileInput">
+                            <i class="fas fa-upload"></i> Load File
+                        </label>
+                        <div id="fileName" style="font-size: 0.9rem; color: #666; text-align: center;"></div>
+                    </div>
+                    
+                    <h3 style="margin-top: 10px; margin-bottom: 10px;"><i class="fas fa-list"></i> Saved Scripts</h3>
+                    <div class="script-list" id="scriptList">
+                        <div class="empty-state" id="emptyListState">
+                            <i class="fas fa-file"></i>
+                            <p>No saved scripts yet.</p>
+                            <p style="font-size: 0.9rem; margin-top: 10px;">Create a new script or import a file.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="scripts-main">
+                    <div class="edit-area" id="editArea">
+                        <h2><i class="fas fa-edit"></i> Edit Script</h2>
+                        <textarea id="editText" placeholder="Type or paste your text here...&#10;&#10;Tips:&#10;• Use blank lines to separate paragraphs&#10;• Titles with # Title, ## Subtitle&#10;• Press Ctrl+S to save"></textarea>
+                        <div class="button-group">
+                            <button id="saveEditedBtn" class="success">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button id="cancelEditBtn" class="secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button id="clearBtn" class="danger">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="control-group">
+                            <label for="fontFamily"><i class="fas fa-font"></i> Font</label>
+                            <select id="fontFamily">
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="monospace">Monospace</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="fontSize"><i class="fas fa-text-height"></i> Size</label>
+                            <select id="fontSize">
+                                <option value="16px">Small</option>
+                                <option value="18px" selected>Normal</option>
+                                <option value="20px">Medium</option>
+                                <option value="22px">Large</option>
+                                <option value="24px">Extra Large</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="textSize"><i class="fas fa-search"></i> Zoom</label>
+                            <select id="textSize">
+                                <option value="0.8">Small</option>
+                                <option value="1" selected>Normal</option>
+                                <option value="1.2">Increased</option>
+                                <option value="1.4">Large</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="lineHeight"><i class="fas fa-arrows-v"></i> Line</label>
+                            <select id="lineHeight">
+                                <option value="1.2">1.2</option>
+                                <option value="1.4">1.4</option>
+                                <option value="1.6" selected>1.6</option>
+                                <option value="1.8">1.8</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="empty-state" id="emptyEditState">
+                        <i class="fas fa-edit"></i>
+                        <h2>Edit Script</h2>
+                        <p>Select a script from the list or create a new one to start editing.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Teleprompter Tab Content -->
+        <div class="tab-content" id="teleprompterTab">
+            <div class="teleprompter-tab">
+                <div class="teleprompter-display" id="teleprompterDisplay">
+                    <div class="empty-state" id="emptyTeleprompterState">
+                        <i class="fas fa-scroll"></i>
+                        <h2>Welcome to Teleprompter</h2>
+                        <p>Select a script from the Scripts tab to start reading.</p>
+                        <p style="margin-top: 15px; font-size: 0.9rem;">
+                            <i class="fas fa-lightbulb"></i> Tip: Use the controls below to manage scrolling.
+                        </p>
+                    </div>
+                    <div class="teleprompter-text" id="teleprompterText" style="display: none;"></div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <div class="teleprompter-controls">
+                    <div class="control-buttons">
+                        <button id="startBtn" disabled class="success">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button id="pauseBtn" disabled class="accent">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button id="stopBtn" disabled class="secondary">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                        <button id="goToScriptsBtn">
+                            <i class="fas fa-arrow-left"></i> Scripts
+                        </button>
+                    </div>
+                    
+                    <div class="control-settings">
+                        <div class="control-group">
+                            <label for="scrollSpeed"><i class="fas fa-tachometer-alt"></i></label>
+                            <input type="range" id="scrollSpeed" min="0.1" max="2" step="0.1" value="0.5">
+                            <span class="speed-indicator" id="speedValue">0.5x</span>
+                        </div>
+                        
+                        <!-- teleprompterFontSize removed: font size is controlled via Scripts settings + Zoom -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; text-align: center; color: var(--dark-gray); font-size: 14px; border-top: 1px solid #e0e0e0;">
+        <p style="margin-bottom: 10px;">
+            &copy; 2026 Roberto Luiz Souza Monteiro. All rights reserved.
+        </p>
+        <p style="margin-bottom: 10px;">
+            <a href="https://github.com/souzamonteiro/teleprompterwebapp.git" 
+                target="_blank"
+                style="color: var(--primary-color); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+                onmouseover="this.style.textDecoration='underline'"
+                onmouseout="this.style.textDecoration='none'">
+                <i class="fa-brands fa-github"></i>
+                View source code on GitHub
+            </a>
+        </p>
+        <p style="font-size: 12px; opacity: 0.8;">
+            This project is licensed under the Apache 2.0 License.
+        </p>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <h3 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Delete Script</h3>
+            <p>Are you sure you want to delete the script "<span id="scriptToDelete"></span>"?</p>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button id="cancelDeleteBtn" class="secondary">Cancel</button>
+                <button id="confirmDeleteBtn" class="danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application state
+        const state = {
+            currentScriptId: null,
+            currentText: '',
+            isPlaying: false,
+            scrollInterval: null,
+            currentPosition: 0,
+            scrollSpeed: 0.5,
+            scripts: [],
+            editMode: false,
+            activeTab: 'scripts',
+            settings: {
+                fontFamily: "'Courier New', monospace",
+                fontSize: "18px",
+                textSize: "1",
+                lineHeight: "1.6"
+            }
+        };
+
+        // DOM Elements
+        const elements = {
+            // Tabs
+            scriptsTabBtn: document.getElementById('scriptsTabBtn'),
+            teleprompterTabBtn: document.getElementById('teleprompterTabBtn'),
+            scriptsTab: document.getElementById('scriptsTab'),
+            teleprompterTab: document.getElementById('teleprompterTab'),
+            
+            // Scripts Tab
+            fileInput: document.getElementById('fileInput'),
+            newScriptBtn: document.getElementById('newScriptBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            importBtn: document.getElementById('importBtn'),
+            scriptList: document.getElementById('scriptList'),
+            editArea: document.getElementById('editArea'),
+            editText: document.getElementById('editText'),
+            saveEditedBtn: document.getElementById('saveEditedBtn'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+            clearBtn: document.getElementById('clearBtn'),
+            fontFamily: document.getElementById('fontFamily'),
+            fontSize: document.getElementById('fontSize'),
+            textSize: document.getElementById('textSize'),
+            lineHeight: document.getElementById('lineHeight'),
+            emptyEditState: document.getElementById('emptyEditState'),
+            
+            // Teleprompter Tab
+            teleprompterDisplay: document.getElementById('teleprompterDisplay'),
+            teleprompterText: document.getElementById('teleprompterText'),
+            emptyTeleprompterState: document.getElementById('emptyTeleprompterState'),
+            startBtn: document.getElementById('startBtn'),
+            pauseBtn: document.getElementById('pauseBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            goToScriptsBtn: document.getElementById('goToScriptsBtn'),
+            scrollSpeed: document.getElementById('scrollSpeed'),
+            speedValue: document.getElementById('speedValue'),
+            progressFill: document.getElementById('progressFill'),
+            
+            // Common
+            deleteModal: document.getElementById('deleteModal'),
+            confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+            cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
+            scriptToDelete: document.getElementById('scriptToDelete'),
+            fileName: document.getElementById('fileName'),
+            emptyListState: document.getElementById('emptyListState')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', init);
+
+        function init() {
+            loadScripts();
+            loadSettings();
+            setupEventListeners();
+            updateTeleprompterStyle();
+            
+            // Setup keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+            
+            // Setup mobile support
+            setupMobileSupport();
+            
+            // Show scripts tab by default
+            switchTab('scripts');
+            
+            // Initialize speed display
+            updateSpeedDisplay();
+        }
+
+        function setupEventListeners() {
+            // Tab switching
+            elements.scriptsTabBtn.addEventListener('click', () => switchTab('scripts'));
+            elements.teleprompterTabBtn.addEventListener('click', () => switchTab('teleprompter'));
+            elements.goToScriptsBtn.addEventListener('click', () => switchTab('scripts'));
+            
+            // Scripts tab buttons
+            elements.newScriptBtn.addEventListener('click', createNewScript);
+            elements.saveBtn.addEventListener('click', saveCurrentScript);
+            elements.importBtn.addEventListener('click', () => elements.fileInput.click());
+            
+            // Teleprompter controls
+            elements.startBtn.addEventListener('click', startTeleprompter);
+            elements.pauseBtn.addEventListener('click', pauseTeleprompter);
+            elements.stopBtn.addEventListener('click', stopTeleprompter);
+            
+            // Edit area
+            elements.saveEditedBtn.addEventListener('click', saveEditedText);
+            elements.cancelEditBtn.addEventListener('click', cancelEdit);
+            elements.clearBtn.addEventListener('click', () => {
+                if (confirm('Clear all text?')) {
+                    elements.editText.value = '';
+                    elements.editText.focus();
+                }
+            });
+            
+            // Settings - with debouncing to avoid too many saves
+            elements.scrollSpeed.addEventListener('input', () => {
+                updateSpeed();
+                saveSettings();
+            });
+            
+            elements.fontFamily.addEventListener('change', () => {
+                updateTeleprompterStyle();
+                saveSettings();
+            });
+            
+            elements.fontSize.addEventListener('change', () => {
+                updateTeleprompterStyle();
+                saveSettings();
+            });
+            
+            elements.textSize.addEventListener('change', () => {
+                updateTeleprompterStyle();
+                saveSettings();
+            });
+
+            elements.lineHeight.addEventListener('change', () => {
+                updateTeleprompterStyle();
+                saveSettings();
+            });
+            
+            // Delete modal
+            elements.confirmDeleteBtn.addEventListener('click', deleteScript);
+            elements.cancelDeleteBtn.addEventListener('click', () => {
+                elements.deleteModal.style.display = 'none';
+            });
+            
+            // File upload
+            elements.fileInput.addEventListener('change', handleFileUpload);
+            
+            // Real-time edit text updates
+            elements.editText.addEventListener('input', () => {
+                elements.saveEditedBtn.disabled = !elements.editText.value.trim();
+            });
+            
+            // Touch controls for mobile
+            elements.teleprompterDisplay.addEventListener('touchstart', handleTouchStart);
+            elements.teleprompterDisplay.addEventListener('touchmove', handleTouchMove);
+            elements.teleprompterDisplay.addEventListener('touchend', handleTouchEnd);
+        }
+
+        function setupMobileSupport() {
+            // Prevent unwanted zoom
+            document.addEventListener('gesturestart', (e) => e.preventDefault());
+            
+            // Adjust text area height on mobile
+            function adjustTextAreaHeight() {
+                const isMobile = window.innerWidth <= 768;
+                elements.editText.style.height = isMobile ? '200px' : '300px';
+            }
+            
+            adjustTextAreaHeight();
+            window.addEventListener('resize', adjustTextAreaHeight);
+        }
+
+        function switchTab(tabName) {
+            // Update active tab button
+            elements.scriptsTabBtn.classList.remove('active');
+            elements.teleprompterTabBtn.classList.remove('active');
+            
+            // Hide all tab content
+            elements.scriptsTab.classList.remove('active');
+            elements.teleprompterTab.classList.remove('active');
+            
+            // Show selected tab
+            if (tabName === 'scripts') {
+                elements.scriptsTabBtn.classList.add('active');
+                elements.scriptsTab.classList.add('active');
+                state.activeTab = 'scripts';
+            } else {
+                elements.teleprompterTabBtn.classList.add('active');
+                elements.teleprompterTab.classList.add('active');
+                state.activeTab = 'teleprompter';
+                
+                // If there's a script selected, update teleprompter display
+                if (state.currentScriptId) {
+                    updateTeleprompterDisplay();
+                }
+            }
+        }
+
+        function handleKeyboardShortcuts(e) {
+            // Ignore shortcuts in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                return;
+            }
+            
+            switch(e.key) {
+                case ' ':
+                case 'Spacebar':
+                    e.preventDefault();
+                    if (state.isPlaying) {
+                        pauseTeleprompter();
+                    } else {
+                        startTeleprompter();
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    stopTeleprompter();
+                    break;
+                case 's':
+                case 'S':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        if (state.editMode) {
+                            saveEditedText();
+                        } else if (state.currentScriptId) {
+                            saveCurrentScript();
+                        }
+                    }
+                    break;
+                case '1':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        switchTab('scripts');
+                    }
+                    break;
+                case '2':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        switchTab('teleprompter');
+                    }
+                    break;
+            }
+        }
+
+        function handleTouchStart(e) {
+            // Allow manual touch scrolling even when paused
+            const touch = e.touches[0];
+            this.touchStartY = touch.clientY;
+            this.scrollStart = elements.teleprompterDisplay.scrollTop;
+            // don't block default here so native momentum works
+        }
+
+        function handleTouchMove(e) {
+            if (!this.touchStartY) return;
+
+            const touch = e.touches[0];
+            const deltaY = this.touchStartY - touch.clientY;
+            elements.teleprompterDisplay.scrollTop = this.scrollStart + deltaY;
+            updateProgress();
+        }
+
+        function handleTouchEnd(e) {
+            // end touch tracking
+            delete this.touchStartY;
+            delete this.scrollStart;
+        }
+
+        function loadScripts() {
+            try {
+                const savedScripts = localStorage.getItem('teleprompterScripts');
+                state.scripts = savedScripts ? JSON.parse(savedScripts) : [];
+            } catch (e) {
+                state.scripts = [];
+                console.error('Error loading scripts:', e);
+            }
+            renderScriptList();
+        }
+
+        function loadSettings() {
+            try {
+                const savedSettings = localStorage.getItem('teleprompterSettings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    state.settings = { ...state.settings, ...settings };
+                    
+                    // Apply settings to UI
+                    if (state.settings.fontFamily) {
+                        elements.fontFamily.value = state.settings.fontFamily;
+                    }
+                    if (state.settings.fontSize) {
+                        elements.fontSize.value = state.settings.fontSize;
+                    }
+                    if (state.settings.textSize) {
+                        elements.textSize.value = state.settings.textSize;
+                    }
+                    if (state.settings.lineHeight) {
+                        elements.lineHeight.value = state.settings.lineHeight;
+                    }
+                    if (state.settings.scrollSpeed) {
+                        state.scrollSpeed = parseFloat(state.settings.scrollSpeed);
+                        elements.scrollSpeed.value = state.scrollSpeed;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+        }
+
+        function saveSettings() {
+            try {
+                state.settings.fontFamily = elements.fontFamily.value;
+                state.settings.fontSize = elements.fontSize.value;
+                state.settings.textSize = elements.textSize.value;
+                state.settings.lineHeight = elements.lineHeight.value;
+                state.settings.scrollSpeed = state.scrollSpeed.toString();
+                
+                localStorage.setItem('teleprompterSettings', JSON.stringify(state.settings));
+            } catch (e) {
+                console.error('Error saving settings:', e);
+            }
+        }
+
+        function renderScriptList() {
+            elements.scriptList.innerHTML = '';
+            
+            if (state.scripts.length === 0) {
+                elements.scriptList.appendChild(elements.emptyListState.cloneNode(true));
+                elements.emptyListState.style.display = 'flex';
+                return;
+            }
+            
+            elements.emptyListState.style.display = 'none';
+            
+            state.scripts.forEach(script => {
+                const scriptItem = document.createElement('div');
+                scriptItem.className = 'script-item';
+                if (script.id === state.currentScriptId) {
+                    scriptItem.classList.add('selected');
+                }
+                
+                const title = script.title || `Script ${new Date(script.id).toLocaleDateString()}`;
+                const preview = script.text.substring(0, 80) + (script.text.length > 80 ? '...' : '');
+                
+                scriptItem.innerHTML = `
+                    <div class="script-title">
+                        <span>${title}</span>
+                        <button class="delete-script" data-id="${script.id}" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="script-preview">${preview}</div>
+                `;
+                
+                scriptItem.addEventListener('click', (e) => {
+                    if (!e.target.closest('.delete-script')) {
+                        selectScript(script.id);
+                    }
+                });
+                
+                const deleteBtn = scriptItem.querySelector('.delete-script');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showDeleteModal(script.id, title);
+                });
+                
+                elements.scriptList.appendChild(scriptItem);
+            });
+        }
+
+        function showDeleteModal(scriptId, scriptTitle) {
+            state.scriptToDelete = scriptId;
+            elements.scriptToDelete.textContent = scriptTitle;
+            elements.deleteModal.style.display = 'flex';
+        }
+
+        function deleteScript() {
+            if (!state.scriptToDelete) return;
+            
+            state.scripts = state.scripts.filter(s => s.id !== state.scriptToDelete);
+            try {
+                localStorage.setItem('teleprompterScripts', JSON.stringify(state.scripts));
+            } catch (e) {
+                console.error('Error saving scripts:', e);
+            }
+            
+            if (state.currentScriptId === state.scriptToDelete) {
+                clearCurrentScript();
+            }
+            
+            elements.deleteModal.style.display = 'none';
+            renderScriptList();
+        }
+
+        function selectScript(scriptId) {
+            const script = state.scripts.find(s => s.id === scriptId);
+            if (!script) return;
+            
+            state.currentScriptId = scriptId;
+            state.currentText = script.text;
+            
+            // Update edit area
+            elements.editText.value = script.text;
+            elements.editArea.style.display = 'block';
+            elements.emptyEditState.style.display = 'none';
+            
+            // Update controls
+            elements.saveBtn.disabled = false;
+            
+            // Set saved speed
+            if (script.scrollSpeed) {
+                state.scrollSpeed = parseFloat(script.scrollSpeed);
+                elements.scrollSpeed.value = state.scrollSpeed;
+                updateSpeedDisplay();
+            }
+            
+            // Update script list selection
+            renderScriptList();
+            
+            // If we're in teleprompter tab, update the display
+            if (state.activeTab === 'teleprompter') {
+                updateTeleprompterDisplay();
+            }
+        }
+
+        function updateTeleprompterDisplay() {
+            if (!state.currentScriptId) return;
+            
+            const script = state.scripts.find(s => s.id === state.currentScriptId);
+            if (!script) return;
+            
+            // Format text (basic Markdown support)
+            const formattedText = formatText(script.text);
+            elements.teleprompterText.innerHTML = formattedText;
+            elements.teleprompterText.style.display = 'block';
+            elements.emptyTeleprompterState.style.display = 'none';
+            
+            // Apply styles
+            updateTeleprompterStyle();
+            
+            // Reset position
+            state.currentPosition = 0;
+            elements.teleprompterDisplay.scrollTop = 0;
+            updateProgress();
+            updateTeleprompterControls();
+        }
+
+        function formatText(text) {
+            if (!text) return '';
+            
+            // Basic Markdown processing
+            return text
+                .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/<p><\/p>/g, '') // Remove empty paragraphs
+                .trim();
+        }
+
+        function createNewScript() {
+            clearCurrentScript();
+            state.editMode = true;
+            
+            elements.editText.value = '';
+            elements.editArea.style.display = 'block';
+            elements.emptyEditState.style.display = 'none';
+            elements.editText.focus();
+            
+            elements.saveEditedBtn.disabled = true;
+        }
+
+        function saveCurrentScript() {
+            if (!state.currentScriptId) {
+                createNewScript();
+                return;
+            }
+            
+            const scriptIndex = state.scripts.findIndex(s => s.id === state.currentScriptId);
+            if (scriptIndex !== -1) {
+                state.scripts[scriptIndex].text = state.currentText;
+                state.scripts[scriptIndex].scrollSpeed = state.scrollSpeed;
+                try {
+                    localStorage.setItem('teleprompterScripts', JSON.stringify(state.scripts));
+                } catch (e) {
+                    console.error('Error saving scripts:', e);
+                }
+                
+                showNotification('Script saved successfully!', 'success');
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Show file name
+            elements.fileName.textContent = `File: ${file.name}`;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                elements.editText.value = e.target.result;
+                elements.saveEditedBtn.disabled = false;
+                elements.editArea.style.display = 'block';
+                elements.emptyEditState.style.display = 'none';
+                elements.editText.focus();
+                
+                showNotification('File loaded successfully!', 'success');
+            };
+            
+            reader.onerror = function() {
+                showNotification('Error reading file.', 'error');
+            };
+            
+            if (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+                reader.readAsText(file);
+            } else {
+                showNotification('Unsupported file format. Use text files (.txt, .md).', 'error');
+            }
+            
+            // Clear input to allow loading the same file again
+            event.target.value = '';
+        }
+
+        function updateSpeed() {
+            state.scrollSpeed = parseFloat(elements.scrollSpeed.value);
+            updateSpeedDisplay();
+            
+            if (state.isPlaying) {
+                pauseTeleprompter();
+                startTeleprompter();
+            }
+        }
+
+        function updateSpeedDisplay() {
+            elements.speedValue.textContent = `${state.scrollSpeed.toFixed(1)}x`;
+        }
+
+        function updateTeleprompterStyle() {
+            const font = elements.fontFamily.value;
+            const size = elements.fontSize.value;
+            const scale = elements.textSize.value;
+            // Compute final font-size by multiplying base px size by scale
+            const base = parseFloat(size) || 18;
+            const multiplier = parseFloat(scale) || 1;
+            const finalSize = (base * multiplier) + 'px';
+
+            elements.teleprompterText.style.fontFamily = font;
+            elements.teleprompterText.style.fontSize = finalSize;
+            // apply configured line-height
+            elements.teleprompterText.style.lineHeight = (elements.lineHeight && elements.lineHeight.value) ? elements.lineHeight.value : '1.6';
+            // ensure no transform scaling remains
+            elements.teleprompterText.style.transform = '';
+            elements.teleprompterText.style.transformOrigin = '';
+        }
+
+        function startTeleprompter() {
+            if (!state.currentScriptId || !state.currentText) {
+                showNotification('No script selected!', 'error');
+                return;
+            }
+            
+            if (state.isPlaying) return;
+            
+            state.isPlaying = true;
+            updateTeleprompterControls();
+            
+            // Clear any existing interval
+            if (state.scrollInterval) {
+                clearInterval(state.scrollInterval);
+            }
+            
+            // Start scrolling the display container
+            state.scrollInterval = setInterval(() => {
+                if (!state.isPlaying) return;
+
+                // Scroll down gradually
+                elements.teleprompterDisplay.scrollTop += state.scrollSpeed;
+                state.currentPosition = elements.teleprompterDisplay.scrollTop;
+
+                // Update progress bar
+                updateProgress();
+
+                // Check if we've reached the bottom
+                const maxScroll = elements.teleprompterDisplay.scrollHeight - elements.teleprompterDisplay.clientHeight;
+                if (elements.teleprompterDisplay.scrollTop >= maxScroll - 1) {
+                    stopTeleprompter();
+                    showNotification('Script completed!', 'success');
+                }
+            }, 50); // Update every 50ms for smooth scrolling
+        }
+
+        function pauseTeleprompter() {
+            if (!state.isPlaying) return;
+            
+            state.isPlaying = false;
+            if (state.scrollInterval) {
+                clearInterval(state.scrollInterval);
+                state.scrollInterval = null;
+            }
+            updateTeleprompterControls();
+        }
+
+        function stopTeleprompter() {
+            if (!state.currentScriptId) return;
+            
+            pauseTeleprompter();
+            
+            // Reset to beginning
+            elements.teleprompterDisplay.scrollTop = 0;
+            state.currentPosition = 0;
+            updateProgress();
+            updateTeleprompterControls();
+        }
+
+        function updateProgress() {
+            if (!state.currentScriptId) return;
+            
+            const maxScroll = elements.teleprompterDisplay.scrollHeight - elements.teleprompterDisplay.clientHeight;
+            if (maxScroll <= 0) {
+                elements.progressFill.style.width = '0%';
+                return;
+            }
+
+            const progress = (elements.teleprompterDisplay.scrollTop / maxScroll) * 100;
+            elements.progressFill.style.width = `${Math.min(100, progress)}%`;
+        }
+
+        function updateTeleprompterControls() {
+            const hasScript = !!state.currentScriptId;
+            const isPlaying = state.isPlaying;
+            
+            elements.startBtn.disabled = !hasScript || isPlaying;
+            elements.pauseBtn.disabled = !hasScript || !isPlaying;
+            elements.stopBtn.disabled = !hasScript || (!isPlaying && state.currentPosition === 0);
+            
+            // Update button text/icons
+            elements.startBtn.innerHTML = isPlaying ? 
+                '<i class="fas fa-play"></i> Start' : 
+                '<i class="fas fa-play"></i> Start';
+            elements.pauseBtn.innerHTML = isPlaying ? 
+                '<i class="fas fa-pause"></i> Pause' : 
+                '<i class="fas fa-pause"></i> Pause';
+        }
+
+        function saveEditedText() {
+            const newText = elements.editText.value.trim();
+            if (!newText) {
+                showNotification('Script cannot be empty.', 'error');
+                return;
+            }
+            
+            if (state.currentScriptId) {
+                // Update existing script
+                const scriptIndex = state.scripts.findIndex(s => s.id === state.currentScriptId);
+                if (scriptIndex !== -1) {
+                    state.scripts[scriptIndex].text = newText;
+                    state.scripts[scriptIndex].scrollSpeed = state.scrollSpeed;
+                    state.currentText = newText;
+                }
+            } else {
+                // Create new script
+                const newId = Date.now();
+                const newScript = {
+                    id: newId,
+                    title: `Script ${new Date().toLocaleDateString()}`,
+                    text: newText,
+                    scrollSpeed: state.scrollSpeed,
+                    createdAt: new Date().toISOString()
+                };
+                
+                state.scripts.push(newScript);
+                state.currentScriptId = newId;
+                state.currentText = newText;
+            }
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('teleprompterScripts', JSON.stringify(state.scripts));
+            } catch (e) {
+                console.error('Error saving scripts:', e);
+                showNotification('Error saving script to storage.', 'error');
+                return;
+            }
+            
+            // Update UI
+            elements.saveBtn.disabled = false;
+            renderScriptList();
+            
+            // If in teleprompter tab, update display
+            if (state.activeTab === 'teleprompter') {
+                updateTeleprompterDisplay();
+            }
+            
+            showNotification('Script saved successfully!', 'success');
+        }
+
+        function cancelEdit() {
+            if (state.currentScriptId) {
+                elements.editText.value = state.currentText;
+            } else {
+                elements.editArea.style.display = 'none';
+                elements.emptyEditState.style.display = 'flex';
+            }
+        }
+
+        function clearCurrentScript() {
+            state.currentScriptId = null;
+            state.currentText = '';
+            state.isPlaying = false;
+            
+            // Clear any active interval
+            if (state.scrollInterval) {
+                clearInterval(state.scrollInterval);
+                state.scrollInterval = null;
+            }
+            
+            // Reset scripts tab
+            elements.editArea.style.display = 'none';
+            elements.emptyEditState.style.display = 'flex';
+            elements.saveBtn.disabled = true;
+            
+            // Reset teleprompter tab
+            elements.teleprompterText.style.display = 'none';
+            elements.emptyTeleprompterState.style.display = 'flex';
+            
+            updateTeleprompterControls();
+            updateProgress();
+            renderScriptList();
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background-color: ${type === 'success' ? 'var(--success-color)' : 
+                                 type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                                   type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Add CSS animations if not already present
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Service Worker successfully registered.'))
+            .catch(err => console.error('Erro SW:', err));
+        }
+    </script>
+</body>
+</html>
