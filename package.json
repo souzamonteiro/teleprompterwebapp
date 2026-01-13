@@ -1,0 +1,28 @@
+{
+  "name": "teleprompterwebapp",
+  "version": "1.0.0",
+  "description": "A fully-featured, responsive teleprompter web application",
+  "keywords": [
+    "teleprompter",
+    "video",
+    "production",
+    "green",
+    "screen"
+  ],
+  "homepage": "https://github.com/souzamonteiro/teleprompterwebapp#readme",
+  "bugs": {
+    "url": "https://github.com/souzamonteiro/teleprompterwebapp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/souzamonteiro/teleprompterwebapp.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Roberto Luiz Souza Monteiro",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  }
+}
